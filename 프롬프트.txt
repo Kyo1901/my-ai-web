@@ -1,0 +1,14 @@
+GitHub 스킬이 제대로 등록되었는지 확인해줘.
+
+1. gh CLI 상태 확인
+   - gh --version 으로 설치 확인
+   - gh auth status 로 로그인 상태 확인
+
+2. 스킬 파일 확인
+   - .claude/skills/gh_cli/skill.md 파일이 존재하는지 확인
+   - 파일 내용을 출력해줘
+
+3. 기본 동작 테스트
+   - gh repo list 로 저장소 목록 확인
+
+모든 항목을 순서대로 확인하고 결과를 알려줘.
