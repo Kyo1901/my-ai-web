@@ -1,0 +1,139 @@
+════════════════════════════════════════════════
+        Novel_Community 데이터베이스 구조
+════════════════════════════════════════════════
+
+작성일: 2026-07-14
+기준 문서: 기획서_보완.txt (v2)
+테이블 접두어: nv_ (Novel_Community 약자)
+
+────────────────────────────────────────
+[표시 안내]
+  ✅ 확정  : 기획서 내용을 바탕으로 확정한 구조
+  💡 제안  : 구현 편의를 위한 제안 (참고용, 바꿔도 됨)
+────────────────────────────────────────
+
+
+== 1. nv_users (일반 회원) ==
+
+✅ 회원가입 화면 필요 정보 (기획서 3번 기준 — 이름/전화번호는 기획서에 없어 제외하고 닉네임으로 구성)
+  * user_id     : 사용자 번호 (PK, 자동증가)
+  * email       : 이메일 (로그인 ID, 중복 불가)
+  * password    : 비밀번호 (암호화 저장)
+  * nickname    : 닉네임 (중복 불가, 댓글·평점에 노출)
+  * created_at  : 가입일
+
+💡 비밀번호는 직접 암호화해 저장하기보다, Supabase Auth(로그인 기능)를 사용하면
+   비밀번호 저장·암호화·비밀번호 찾기 기능을 Supabase가 대신 처리해줍니다.
+   → 이 경우 nv_users는 "닉네임" 등 프로필 정보만 저장하고,
+      실제 로그인 정보는 auth.users(Supabase 기본 제공 테이블)와 연결(user_id = auth.uid())하는 방식을 추천합니다.
+
+
+== 2. nv_admins (관리자 계정) ==
+
+✅ 기획서 2번 "관리자 계정은 일반 회원과 별도 준비" 결정 반영
+  * admin_id    : 관리자 번호 (PK, 자동증가)
+  * email       : 관리자 로그인 이메일
+  * password    : 비밀번호 (암호화 저장, 또는 위와 동일하게 Supabase Auth 사용 가능)
+  * name        : 관리자 이름/표시명
+  * created_at  : 등록일
+
+  → nv_users와 완전히 분리된 별도 테이블이므로, 일반 회원가입으로는 관리자 권한이 생기지 않음
+
+
+== 3. nv_categories (장르 / 잡지 종류 카테고리) ==
+
+✅ 기획서 5-1 "사이드바 장르/잡지 카테고리", 5-4 "장르별 필터" 근거로 추가
+  * category_id : 카테고리 번호 (PK, 자동증가)
+  * name        : 카테고리 이름 (예: 로맨스, 판타지, 시사 잡지 등)
+  * type        : 구분 (novel = 소설 / magazine = 잡지)
+
+
+== 4. nv_posts (게시물 — 소설/잡지 정보) ==
+
+✅ 기획서 5-4, 5-5 게시물 카드/상세 항목 + 2번 "신청 게시판 승인 시 관리자가 등록" 흐름 반영
+  * post_id       : 게시물 번호 (PK, 자동증가)
+  * title         : 제목
+  * author        : 저자
+  * publisher     : 출판사
+  * price         : 가격
+  * cover_image   : 표지 이미지 URL (네이버 책 API 응답값 저장)
+  * summary       : 간단한 줄거리
+  * category_id   : 카테고리 (FK → nv_categories.category_id)
+  * avg_rating    : 평균 평점 (nv_comments의 평점을 계산해 캐시 저장, 정렬용)
+  * created_by    : 등록한 관리자 (FK → nv_admins.admin_id)
+  * created_at    : 등록일 (= 신간순 정렬 기준)
+
+💡 avg_rating을 매번 계산하지 않고 캐시 컬럼으로 저장해두면 "평점순 정렬"이 훨씬 빨라집니다.
+   (댓글에 평점이 새로 달리거나 수정될 때마다 이 값을 다시 계산해 갱신)
+
+
+== 5. nv_comments (댓글 — 대댓글 · 평점 포함) ==
+
+✅ 기획서 4번 평점 규칙 + 6번 댓글 기능(대댓글, 베스트 댓글) 반영
+  * comment_id        : 댓글 번호 (PK, 자동증가)
+  * post_id           : 어떤 게시물의 댓글인지 (FK → nv_posts.post_id)
+  * user_id           : 작성자 (FK → nv_users.user_id)
+  * parent_comment_id : 부모 댓글 번호 (NULL이면 최상위 댓글, 값이 있으면 그 댓글의 대댓글)
+  * content           : 댓글 내용
+  * rating            : 평점 1~5 (최상위 댓글에만 적용, 대댓글은 NULL)
+  * is_best           : 베스트 댓글 여부 (좋아요 5개 이상 & 좋아요 최다 상위 3개 캐시)
+  * created_at        : 작성일
+  * updated_at        : 수정일 (본인 댓글 수정 시 갱신)
+
+✅ 제약 조건 : (post_id, user_id)는 최상위 댓글(parent_comment_id IS NULL) 기준으로 1개만 허용
+   → 기획서의 "1인 1평점, 재평가 시 기존 점수 수정" 규칙을 그대로 구현
+   (재평가는 새 댓글 작성이 아니라 본인의 기존 최상위 댓글을 수정하는 방식)
+
+
+== 6. nv_comment_likes (댓글 좋아요) ==
+
+✅ 기획서 6번 "댓글 좋아요", "베스트 댓글 기준(좋아요 5개 이상)" 반영
+  * like_id     : 좋아요 번호 (PK, 자동증가)
+  * comment_id  : 좋아요 누른 댓글 (FK → nv_comments.comment_id)
+  * user_id     : 좋아요 누른 사용자 (FK → nv_users.user_id)
+  * created_at  : 좋아요 누른 시각
+
+✅ 제약 조건 : (comment_id, user_id) 조합은 유일해야 함 (한 사람이 같은 댓글에 중복 좋아요 불가)
+
+
+== 7. nv_requests (신청 게시판) ==
+
+✅ 기획서 5-8 신청 게시판 흐름 반영
+  * request_id      : 신청 번호 (PK, 자동증가)
+  * user_id         : 신청자 (FK → nv_users.user_id)
+  * book_title      : 신청 도서명
+  * reason          : 신청 사유 (선택 입력)
+  * status          : 처리 상태 (대기중 / 승인됨 / 반려됨)
+  * reject_reason   : 반려 사유 (반려 시에만 입력)
+  * linked_post_id  : 승인되어 등록된 게시물 번호 (FK → nv_posts.post_id, 승인 전에는 NULL)
+  * processed_by    : 처리한 관리자 (FK → nv_admins.admin_id, 대기중일 때는 NULL)
+  * created_at      : 신청일
+  * processed_at    : 처리일 (승인/반려 처리 시각, 대기중일 때는 NULL)
+
+
+════════════════════════════════════════════════
+[테이블 연결 관계]
+════════════════════════════════════════════════
+
+  nv_users        1 ── N  nv_comments        (한 사용자가 여러 댓글 작성)
+  nv_users        1 ── N  nv_comment_likes   (한 사용자가 여러 좋아요)
+  nv_users        1 ── N  nv_requests        (한 사용자가 여러 건 신청)
+
+  nv_admins       1 ── N  nv_posts           (한 관리자가 여러 게시물 등록)
+  nv_admins       1 ── N  nv_requests        (한 관리자가 여러 신청 처리)
+
+  nv_categories   1 ── N  nv_posts           (한 카테고리에 여러 게시물)
+
+  nv_posts        1 ── N  nv_comments        (한 게시물에 여러 댓글)
+  nv_posts        1 ── 1  nv_requests        (승인된 신청 1건 = 게시물 1개, linked_post_id로 연결)
+
+  nv_comments     1 ── N  nv_comments        (자기참조: 최상위 댓글 1개에 여러 대댓글 — parent_comment_id)
+  nv_comments     1 ── N  nv_comment_likes   (한 댓글에 여러 좋아요)
+
+
+════════════════════════════════════════════════
+[다음 단계]
+  위 구조를 바탕으로 실제 개발 단계에서
+  → Supabase 프로젝트 생성 → 위 7개 테이블(nv_ 접두어) 생성 → RLS(행 단위 보안 정책) 설정
+  순서로 진행하면 됩니다.
+════════════════════════════════════════════════
