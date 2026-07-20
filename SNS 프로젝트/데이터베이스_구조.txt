@@ -1,0 +1,193 @@
+== PetLog SNS 사이트 DB 구조 정리 ==
+
+기준 문서: 기획서.txt (PetLog — 반려동물 라이프스타일 SNS)
+표기: [1차] MVP 핵심 / [2차] 참여 강화 / [3차] 경험 고도화
+※ 모든 테이블 이름에는 "petlog_" 접두사를 붙여 다른 프로젝트
+  테이블과 구분한다.
+
+핵심 개념:
+- 보호자(사람) 계정 1개 아래에 펫 프로필을 여러 개 등록하는 구조
+- 로그인·설정·알림·저장은 "보호자 계정(petlog_users)" 단위로 관리
+- 게시물 작성·팔로우·좋아요·댓글의 주체는 "펫 프로필(petlog_pet_profiles)" 단위
+
+
+[1차] 보호자 계정 (petlog_users 테이블)
+- 로그인/회원가입 화면에서 필요한 정보들:
+  * id: (사용자 번호 - 자동으로 1, 2, 3... 증가)
+  * email: (로그인할 때 사용, 중복 불가)
+  * password: (로그인할 때 사용 - 실제 저장은 암호화(해시)해서 저장)
+  * nickname: (보호자 이름/닉네임 - 회원가입 시 입력, 중복 불가.
+    계정 설정·차단 목록 등 보호자 단위 화면에 표시)
+  * birth_date: (생년월일 - 만 14세 미만 가입 차단 확인용)
+  * email_verified: (이메일 인증 완료 여부 - 예/아니오)
+  * created_at: (가입일 - 언제 가입했는지)
+
+[1차] 펫 프로필 (petlog_pet_profiles 테이블)
+- 프로필 화면의 주인공은 사람이 아닌 반려동물:
+  * id: (펫 프로필 번호 - 자동 증가)
+  * user_id: (보호자가 누구인지 - petlog_users 테이블과 연결)
+  * name: (반려동물 이름)
+  * species: (동물 종류 - 강아지/고양이/소동물/기타, 탐색 카테고리 필터에 사용)
+  * breed: (품종 - 예: 말티즈, 코리안숏헤어)
+  * birth_date: (생년월일 - "생일이 14일 남았어요" D-Day 표시에 사용)
+  * gender: (성별)
+  * profile_image_url: (프로필 사진 이미지 경로)
+  * bio: (소개글 - 프로필에 보이는 자기소개)
+  * created_at: (등록일)
+
+[1차] 게시물 (petlog_posts 테이블)
+- SNS 피드 화면에서 필요한 정보들:
+  * id: (게시물 고유번호 - 자동 증가)
+  * pet_id: (어느 펫 프로필 피드에 올렸는지 - petlog_pet_profiles 테이블과 연결)
+  * caption: (본문 글 내용 - 최대 500자)
+  * location: (위치 태그 - "동 단위"까지만 저장, 상세 주소·좌표는 저장 금지)
+  * likes_count: (좋아요 수 - 매번 세지 않도록 숫자로 함께 저장하는 캐시 값)
+  * comments_count: (댓글 수 - 피드 카드에 빠르게 표시하기 위한 캐시 값)
+  * created_at: (작성일)
+  * updated_at: (수정일 - 게시물 수정 기능이 있으므로 필요)
+
+[1차] 게시물 이미지 (petlog_post_images 테이블)
+- 게시물 1개에 사진 최대 10장 → 별도 테이블로 분리:
+  * id: (이미지 번호 - 자동 증가)
+  * post_id: (어느 게시물의 사진인지 - petlog_posts 테이블과 연결)
+  * image_url: (업로드한 이미지 경로 - 긴 변 1440px 리사이즈본)
+  * sort_order: (몇 번째 사진인지 - 이미지 슬라이더 순서 1~10)
+
+[1차] 팔로우 (petlog_follows 테이블)
+- 펫 프로필 간 비대칭 팔로우 (사람이 아닌 펫끼리 팔로우):
+  * id: (팔로우 번호 - 자동 증가)
+  * follower_pet_id: (팔로우를 "하는" 펫 - petlog_pet_profiles와 연결)
+  * following_pet_id: (팔로우를 "받는" 펫 - petlog_pet_profiles와 연결)
+  * created_at: (팔로우한 날짜)
+  ※ 같은 조합으로 중복 팔로우 불가 (follower + following 유니크)
+
+[1차] 좋아요 (petlog_likes 테이블)
+- "누가" 좋아요 했는지 알아야 하므로 숫자 하나가 아닌 별도 테이블 사용:
+  * id: (좋아요 번호 - 자동 증가)
+  * post_id: (어떤 게시물에 - petlog_posts 테이블과 연결)
+  * pet_id: (어떤 펫 프로필로 눌렀는지 - petlog_pet_profiles와 연결)
+  * created_at: (좋아요 누른 시각)
+  ※ 한 펫이 같은 게시물에 좋아요 1번만 가능 (post + pet 유니크)
+  ※ 좋아요를 누르거나 취소할 때 petlog_posts.likes_count 숫자도 같이 +1/-1
+
+[1차] 댓글 (petlog_comments 테이블)
+- 댓글 + 답글(대댓글 1단계까지):
+  * id: (댓글 번호 - 자동 증가)
+  * post_id: (댓글 달린 게시물 - petlog_posts 테이블과 연결)
+  * pet_id: (댓글 작성자 - 현재 선택된 펫 프로필로 표시)
+  * parent_comment_id: (답글이면 부모 댓글 번호, 일반 댓글이면 비워둠
+    - 부모가 있는 댓글에는 다시 답글 불가 → 1단계 제한)
+  * content: (댓글 내용)
+  * created_at: (댓글 작성일)
+
+[1차] 댓글 이모지 반응 (petlog_comment_reactions 테이블)
+- 댓글에 이모지로 반응하는 기능:
+  * id: (반응 번호 - 자동 증가)
+  * comment_id: (어떤 댓글에 - petlog_comments 테이블과 연결)
+  * pet_id: (누가 반응했는지 - petlog_pet_profiles와 연결)
+  * emoji: (어떤 이모지인지 - 예: ❤️ 😂 😮)
+  * created_at: (반응한 시각)
+
+[1차] 해시태그 (petlog_hashtags 테이블 + petlog_post_hashtags 테이블)
+- 게시물 여러 개가 같은 태그를 쓰므로 두 테이블로 나눔:
+  petlog_hashtags (태그 사전)
+  * id: (태그 번호 - 자동 증가)
+  * tag_name: (태그 이름 - 예: 강아지, 산책 / # 제외하고 저장, 중복 불가)
+  petlog_post_hashtags (게시물-태그 연결)
+  * post_id: (어느 게시물이 - petlog_posts와 연결)
+  * hashtag_id: (어느 태그를 썼는지 - petlog_hashtags와 연결)
+  ※ 1차에는 저장·자동완성만, 태그 검색 화면은 2차에서 사용
+
+
+[2차] 게시물 저장 · 컬렉션 (petlog_collections + petlog_saved_posts 테이블)
+- 저장은 펫이 아닌 "보호자" 단위 (마이페이지 저장 탭):
+  petlog_collections (저장 폴더)
+  * id: (컬렉션 번호 - 자동 증가)
+  * user_id: (누구의 컬렉션인지 - petlog_users와 연결)
+  * name: (컬렉션 이름 - 예: "귀여운 고양이 모음")
+  petlog_saved_posts (저장한 게시물)
+  * id: (저장 번호 - 자동 증가)
+  * user_id: (누가 저장했는지 - petlog_users와 연결)
+  * post_id: (어떤 게시물을 - petlog_posts와 연결)
+  * collection_id: (어느 컬렉션에 넣었는지 - 미분류면 비워둠)
+  * created_at: (저장한 시각)
+
+[2차] 건강 기록 (petlog_health_records 테이블)
+- 마이페이지 건강 기록 탭 + D-day 리마인더 알림의 재료:
+  * id: (기록 번호 - 자동 증가)
+  * pet_id: (어느 반려동물의 기록인지 - petlog_pet_profiles와 연결)
+  * record_type: (기록 종류 - 예방접종 / 건강검진 / 구충)
+  * title: (기록 이름 - 예: "종합백신 3차")
+  * record_date: (실제 접종·검진한 날짜 - 타임라인 날짜순 정렬 기준)
+  * next_due_date: (다음 예정일 - D-7 리마인더 알림 계산에 사용, 없으면 비워둠)
+  * memo: (메모 - 병원 이름, 특이사항 등)
+  * created_at: (기록 등록일)
+
+[2차] 알림 (petlog_notifications 테이블)
+- 알림 페이지 + 탭바 뱃지(안 읽은 개수)에 필요한 정보:
+  * id: (알림 번호 - 자동 증가)
+  * user_id: (알림 받는 사람 - 알림은 보호자 계정 단위 → petlog_users와 연결)
+  * type: (알림 종류 - 좋아요 / 댓글 / 팔로우 / 건강리마인더
+    → 유형별 필터(전체/활동/리마인더)와 아이콘 색 구분에 사용)
+  * actor_pet_id: (알림을 발생시킨 상대 펫 - 리마인더 알림이면 비워둠)
+  * post_id: (관련 게시물 - 좋아요·댓글 알림일 때, 없으면 비워둠)
+  * health_record_id: (관련 건강 기록 - 리마인더 알림일 때, 없으면 비워둠)
+  * is_read: (읽음 여부 - 안 읽은 알림 뱃지 숫자 계산 + 일괄 읽음 처리)
+  * created_at: (알림 발생 시각)
+
+[2차] 신고 (petlog_reports 테이블)
+- 게시물·댓글 신고 접수 → 관리자 검토 프로세스:
+  * id: (신고 번호 - 자동 증가)
+  * reporter_user_id: (신고한 사람 - petlog_users와 연결)
+  * target_type: (신고 대상 종류 - 게시물 / 댓글)
+  * target_id: (신고 대상의 번호 - petlog_posts 또는 petlog_comments의 id)
+  * reason: (신고 사유 - 스팸 / 동물 학대 의심 / 욕설·혐오 /
+    부적절한 콘텐츠 / 기타 → "동물 학대 의심"은 최우선 검토)
+  * status: (처리 상태 - 접수됨 / 검토중 / 처리완료)
+  * created_at: (신고 접수일)
+
+[2차] 차단 (petlog_blocks 테이블)
+- 차단하면 상대의 게시물·댓글·검색 노출을 막음 (보호자 계정 단위):
+  * id: (차단 번호 - 자동 증가)
+  * user_id: (차단한 사람 - petlog_users와 연결)
+  * blocked_user_id: (차단당한 사람 - petlog_users와 연결)
+  * created_at: (차단한 날짜)
+  ※ 설정 > 차단 목록 관리 화면에서 이 테이블을 조회
+
+
+[3차] 예정 테이블 (개요만 — 상세 설계는 3차 착수 시)
+- petlog_stories: 24시간 만료 스토리 (pet_id, image_url, expires_at, 열람 기록)
+- petlog_messages: 1:1 DM (보낸 사람, 받는 사람, 내용, 사진, 읽음 여부)
+- petlog_walks: 산책 GPS 기록 (pet_id, 경로 데이터, 거리, 시간, 칼로리
+  ※ 경로는 기본 비공개, 공유 시 출발·도착 반경 200m 마스킹)
+
+
+게시물 작성 방식 (기획서 5. 게시물 작성 페이지 기준):
+- 1단계: 갤러리에서 사진 선택 (최대 10장) 또는 카메라 촬영
+- 2단계: 편집 (1:1 기본, 4:5 ~ 1.91:1 크롭 / 긴 변 1440px 리사이즈)
+- 3단계: 본문 작성 (500자) + 해시태그 자동완성 + 위치(동 단위)
+         + 어느 펫 프로필 피드에 올릴지 선택
+- 저장: petlog_posts 1건 생성 → 사진들은 petlog_post_images에 순서대로 저장
+        → 해시태그는 petlog_hashtags에 없으면 새로 만들고
+          petlog_post_hashtags로 연결
+- ※ 수업 실습 단계에서는 사진 업로드 대신 Unsplash API 이미지 URL을
+  petlog_post_images.image_url에 저장하는 방식으로 대체 가능
+
+
+SNS 테이블 연결 관계 정리:
+- 보호자 : 펫 프로필 = 1 : N (계정 1개에 반려동물 여러 마리 등록)
+- 펫 프로필 : 게시물 = 1 : N (한 펫이 여러 게시물 작성)
+- 게시물 : 이미지 = 1 : N (게시물 1개에 사진 최대 10장)
+- 펫 프로필 : 펫 프로필 = N : M 팔로우 (petlog_follows 테이블로 연결,
+  비대칭 — 뭉치는 팔로우하고 같은 집 나비는 안 할 수 있음)
+- 게시물 : 좋아요 = 1 : N (누가 눌렀는지 기록 + likes_count 캐시 병행)
+- 게시물 : 댓글 = 1 : N, 댓글 : 답글 = 1 : N (1단계까지만)
+- 게시물 : 해시태그 = N : M (petlog_post_hashtags 중간 테이블로 연결)
+- 펫 프로필 : 건강 기록 = 1 : N (기록마다 next_due_date로 리마인더 알림 생성)
+- 보호자 : 알림 = 1 : N (알림·저장·차단·신고는 보호자 계정 단위)
+
+회원 탈퇴 시 처리 (기획서 7. 정책):
+- petlog_users 삭제 시 그 아래 펫 프로필·게시물·댓글·건강 기록도 함께 삭제
+  (테이블 연결에 "같이 삭제(CASCADE)" 옵션 사용, 법정 보관 의무 항목 제외)
+
+== PetLog SNS DB 구조 정리 완료 ==
