@@ -1,0 +1,74 @@
+== Projects 탭 UI/UX 기획서 ==
+
+선택한 레이아웃 방식
+[O] 리스트 형태 레이아웃 (가로 긴 카드)
+
+썸네일 카드 구성
+이미지:
+- 타입: [O] 스크린샷 [ ] 모바일 목업 [ ] 커스텀 디자인
+- 비율: [ ] 16:9 [ ] 4:3 [O] 1:1
+- 크기: 가로 300px, 세로 300px
+
+정보 표시:
+- 프로젝트 이름 (제목)
+- 한 줄 설명: _______________
+- 기술 스택: [ ] 뱃지형 [O] 텍스트형 [ ] 아이콘형
+- 기타 정보: (개인/팀)
+
+링크 및 버튼:
+- [O] Live Demo 버튼
+- [O] GitHub 버튼
+- [ ] View Details 버튼
+- [ ] 기타: _______________
+
+인터랙션 효과
+- 호버 효과: 카드 테두리 네온 효과
+- 클릭 피드백: 버튼 애니메이션
+- 모바일 터치: 터치 피드백
+
+반응형 설계
+- 데스크톱: 1열 그리드
+- 태블릿: 1열 그리드
+- 모바일: 1열 그리드
+- 특별 고려사항: 
+    - 모바일 환경에서는 썸네일 위, 설명 아래
+
+== 기획 완료 ==
+
+== Projects 테이블 DB 구조 정리 ==
+
+프로젝트 정보 (projects 테이블)
+- Projects 탭 UI에서 필요한 정보들:
+  * id: (프로젝트 고유번호 - 자동으로 1, 2, 3... 증가)
+  * title: (프로젝트 제목)
+  * description: (프로젝트 설명)
+  * tech_stack: (기술 스택 배열 - ["React", "Supabase", "CSS3"])
+  * project_type: (개인/팀 여부)
+  * detail_url: (배포된 사이트 링크)
+  * thumbnail_url: (썸네일 이미지 경로)
+  * is_published: (게시 여부 - true/false)
+  * sort_order: (표시 순서)
+  * created_at: (생성일시)
+  * updated_at: (수정일시)
+
+기본 프로젝트 데이터:
+프로젝트 1 (Lesson2):
+- title: "소설 정보 공유 커뮤니티"
+- description: "Supabase와 React로 구현한 실시간 커뮤니티"
+- tech_stack: ["React", "Supabase", "PostgreSQL", "CSS3"]
+- detail_url: "https://kyo1901.github.io/novel-community/"
+- thumbnail_url: "https://image.thum.io/get/fullpage/crop/1200/https://kyo1901.github.io/novel-community/"
+
+프로젝트 2 (Lesson3):
+- title: "Petlog SNS"
+- description: "모바일 퍼스트 소셜 미디어 웹앱"
+- tech_stack: ["React", "Supabase", "Unsplash API", "MUI"]
+- detail_url: "https://kyo1901.github.io/petlog_sns/"
+- thumbnail_url: "https://image.thum.io/get/fullpage/crop/1200/https://kyo1901.github.io/petlog_sns/"
+
+참고: thumbnail_url은 단순 "{detail_url}" 대신 "fullpage/crop/1200/{detail_url}" 옵션을 사용한다.
+React SPA는 초기 페이지 로드(load 이벤트) 시점에는 데이터가 아직 로딩 중이라, 옵션 없이 캡처하면
+로딩 스피너 화면이 찍히는 경우가 있다. fullpage 옵션은 전체 페이지 렌더링이 끝날 때까지 기다린 뒤
+캡처하므로 완전히 로딩된 화면을 얻을 수 있고, crop/1200은 이를 600x600 정사각형으로 되돌린다.
+
+== Projects DB 구조 정리 완료 ==
