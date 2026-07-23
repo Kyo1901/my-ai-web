@@ -1,0 +1,40 @@
+내 포트폴리오의 About Me 탭 페이지를 만들어줘:
+
+기본 정보 섹션:
+- 이름: 김기호
+- 학력: 조선대학교 컴퓨터공학과
+- 전공: 컴퓨터 공학
+- 경력: 7년차
+- 프로필 사진: 포트폴리오 프로젝트\프로필 사진.jpg
+
+콘텐츠 섹션들:
+1. "나의 개발 스토리" (홈 탭 표시: O)
+   - 내용: [개발을 시작하게 된 계기나 경험을 작성해주세요]
+2. "개발 철학" (홈 탭 표시: O)
+   - 내용: [개발할 때 중요하게 생각하는 가치나 원칙을 작성해주세요]
+3. "개인적인 이야기" (홈 탭 표시: X)
+   - 내용: [취미, 관심사 등 개인적인 내용을 작성해주세요]
+
+기술 요구사항:
+- React 함수형 컴포넌트 사용
+- useState로 데이터 관리
+- 각 콘텐츠 섹션에 showInHome 속성 포함
+- MUI 컴포넌트 활용
+- 반응형 디자인 적용
+
+데이터 구조:
+```javascript
+const aboutMeData = {
+  basicInfo: { name: "", education: "", major: "", experience: "", photo: "" },
+  sections: [
+    { id: "dev-story", title: "나의 개발 스토리", content: "", showInHome: true },
+    { id: "philosophy", title: "개발 철학", content: "", showInHome: true },
+    { id: "personal", title: "개인적인 이야기", content: "", showInHome: false }
+  ]
+}
+```
+
+레이아웃:
+- 기본 정보는 상단에 카드 형태로 배치
+- 콘텐츠 섹션들은 탭 또는 아코디언 형태로 구성
+- 깔끔하고 읽기 쉬운 디자인

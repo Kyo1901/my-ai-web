@@ -1,0 +1,40 @@
+About Me 탭에 스킬 섹션을 추가해줘:
+
+기본 스킬 템플릿 (5종):
+- HTML: 80% (Frontend)
+- CSS: 75% (Frontend)
+- JavaScript: 70% (Frontend)
+- React: 60% (Framework)
+- Figma: 65% (Design)
+
+스킬 표시 구조:
+- 아이콘 + 기술명 + 숙련도 퍼센트 바
+- 카테고리별 그룹핑 (Frontend, Framework, Design 등)
+- 호버 시 간단한 설명 툴팁
+
+추가 가능한 기술들:
+Vue.js, Angular, TypeScript (Frontend 확장)
+Node.js, Python, Java (Backend)
+Git, React Native, MongoDB (도구 & 기타)
+
+구현 요구사항:
+```javascript
+const skillsData = [
+  { id: 1, icon: "orange-diamond", name: "HTML", level: 80, category: "Frontend" },
+  { id: 2, icon: "palette", name: "CSS", level: 75, category: "Frontend" },
+  { id: 3, icon: "zap", name: "JavaScript", level: 70, category: "Frontend" },
+  { id: 4, icon: "atom", name: "React", level: 60, category: "Framework" },
+  { id: 5, icon: "target", name: "Figma", level: 65, category: "Design" }
+]
+```
+
+UI 요구사항:
+- 프로그래스 바는 애니메이션 효과 포함
+- 반응형 그리드 레이아웃 (모바일: 1열, 태블릿: 2열, 데스크탑: 3열)
+- 카테고리별 색상 구분
+- "스킬 추가" 버튼으로 확장 가능
+
+홈 탭 연동 준비:
+- 숙련도 높은 순으로 정렬 기능
+- 상위 N개 선택 기능
+- 메인 스킬 표시 여부 속성

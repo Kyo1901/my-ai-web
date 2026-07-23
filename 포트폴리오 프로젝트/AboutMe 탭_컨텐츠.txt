@@ -1,0 +1,19 @@
+1. "나의 개발 스토리" 
+   - 내용: [개발을 시작하게 된 계기나 경험을 작성해주세요]
+2. "개발 철학" 
+   - 내용: [개발할 때 중요하게 생각하는 가치나 원칙을 작성해주세요]
+3. "개인적인 이야기" 
+   - 내용: [취미, 관심사 등 개인적인 내용을 작성해주세요]
+
+스킬:
+- HTML: 90% (Frontend)
+- CSS: 80% (Frontend)
+- JavaScript: 80% (Frontend)
+- React: 60% (Framework)
+- Figma: 65% (Design)
+- Java: 80%(Background)
+- Python: 80%(Background)
+- C: 65%(Background)
+- C++: 60%(Background)
+- Git: 75%(Tool & etc)
+- SQL: 70%(Tool & etc)
